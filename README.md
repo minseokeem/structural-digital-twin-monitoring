@@ -3,6 +3,8 @@
 ## Overview
 This project develops a structural monitoring system using UWB-based localization and sensor modules to estimate structural displacement and visualize the results in a digital twin environment.
 
+![Project Poster](media/project_poster_github.png)
+
 ## My Role
 - Designed the sensor module hardware and PCB
 - Integrated ESP32-C3, DW3000 UWB, and ADXL345 accelerometer
