@@ -8,9 +8,7 @@ This project develops a real-time structural monitoring system based on digital 
 **Team Project (3 members)**  
 **Excellence Award (3rd of 29 teams)** — 2026 UOS ECE Innovation Fair
 
-My primary contributions were sensor-module hardware/PCB design and UWB localization improvements. AI-assisted sensor placement and 3D model processing were primarily handled by teammates.
-
-## My Role
+## My Contributions
 
 - Designed the sensor-module hardware and PCB
 - Integrated ESP32-C3, BU03 UWB module, and ADXL345 accelerometer
