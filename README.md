@@ -1,7 +1,7 @@
 # Structural Digital Twin Monitoring System
 
 ## Overview
-This project develops a structural monitoring system using UWB-based localization and sensor modules to estimate structural displacement and visualize the results in a digital twin environment.
+This project develops a real-time structural monitoring system based on digital twin technology. It integrates 3D structural modeling, AI-assisted sensor placement, wireless sensing, and state estimation to monitor structural displacement and visualize condition changes in a digital twin environment.
 
 ![Project Poster](media/project_poster_github.png)
 
