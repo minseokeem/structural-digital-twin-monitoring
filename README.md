@@ -14,6 +14,12 @@ This project develops a real-time structural monitoring system based on digital 
 - Integrated ESP32-C3, BU03 UWB module, and ADXL345 accelerometer
 - Improved the UWB-based localization algorithm
 - Participated in experimental validation and ranging/localization data analysis
+  
+## Sensor Module Hardware
+
+Custom-designed sensor PCB and assembled enclosure.
+
+<img src="media/sensor_module.png" alt="Custom sensor PCB and enclosure" width="600">
 
 ## Key Improvements
 
