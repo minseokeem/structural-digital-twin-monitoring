@@ -19,7 +19,7 @@ This project develops a real-time structural monitoring system based on digital 
 
 Custom-designed sensor PCB and assembled enclosure.
 
-<img src="media/sensor_module.png" alt="Custom sensor PCB and enclosure" width="600">
+<img src="media/sensor_module.png.jpg" alt="Custom sensor PCB and enclosure" width="600">
 
 ## Key Improvements
 
