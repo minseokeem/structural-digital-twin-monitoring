@@ -14,12 +14,24 @@ This project develops a real-time structural monitoring system based on digital 
 - Integrated ESP32-C3, BU03 UWB module, and ADXL345 accelerometer
 - Improved the UWB-based localization algorithm
 - Participated in experimental validation and ranging/localization data analysis
-  
+
 ## Sensor Module Hardware
 
 Custom-designed sensor PCB and assembled enclosure.
 
 <img src="media/sensor_module.png.jpg" alt="Custom sensor PCB and enclosure" width="600">
+
+## Digital Twin Visualization
+
+3D visualization of the monitored structure, showing UWB anchor and sensor tag locations with real-time condition monitoring.
+
+<img src="media/digital_twin.png" alt="3D digital twin monitoring interface" width="700">
+
+## Real-Time Monitoring Dashboard
+
+Web-based interface displaying displacement, tilt, and vibration status, along with time-series sensor data.
+
+<img src="media/monitoring_dashboard.png" alt="Real-time structural monitoring dashboard" width="700">
 
 ## Key Improvements
 
