@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>MSL Digital Twin</title>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+<div class="app">
+  <button id="sidebarOpenBtn" class="sidebarOpenBtn" type="button" aria-label="사이드바 열기" title="사이드바 열기">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4zM9 5.5v13M6.3 9h.1M6.3 12h.1M6.3 15h.1"/></svg>
+  </button>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebarHeader">
+      <button id="sidebarLogoBtn" class="mslLogo" type="button" title="디지털 트윈으로 이동">MSL</button>
+      <button id="sidebarCloseBtn" class="iconButton" type="button" aria-label="사이드바 닫기" title="사이드바 닫기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v13H5zM10 5.5v13"/></svg>
+      </button>
+    </div>
+
+    <nav class="sidebarNav" aria-label="주요 메뉴">
+      <button id="newTaskNavBtn" class="sideNavItem active" type="button" data-workspace="viewer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>새 작업</span>
+      </button>
+
+      <details class="sidebarModulePanel" open>
+        <summary>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7zM4 10H2M4 14H2M22 10h-2M22 14h-2M10 4V2M14 4V2M10 22v-2M14 22v-2"/></svg>
+          <span>모듈 매핑</span>
+          <span id="mappingState" class="moduleSummaryState">0 / 5</span>
+        </summary>
+        <div class="sidebarModuleBody">
+          <div class="mappingToolbar">
+            <button id="scanModulesBtn" type="button">새로고침</button>
+            <button id="autoMapModulesBtn" type="button">ID 자동 매핑</button>
+          </div>
+          <div id="moduleMappingList" class="moduleMappingList"></div>
+        </div>
+      </details>
+
+      <button id="aiResultsNavBtn" class="sideNavItem" type="button" data-workspace="ai">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.4 4.3L18 9l-4.6 1.7L12 15l-1.4-4.3L6 9l4.6-1.7L12 3zM18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z"/></svg>
+        <span>AI 추천 결과</span>
+      </button>
+      <button id="statsNavBtn" class="sideNavItem" type="button" data-workspace="stats">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V4M19 19v-6M3 19h18"/></svg>
+        <span>통계 화면</span>
+      </button>
+    </nav>
+
+    <div class="sidebarSpacer"></div>
+
+    <details class="sidebarAdvanced">
+      <summary>
+        <span class="summaryIcon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM19 12l2-1-2-3-2 .6-1.4-1.4.6-2-3-2-1 2h-2l-1-2-3 2 .6 2L5.4 8.6 3.4 8 2 11l2 1v2l-2 1 1.4 3 2-.6 1.4 1.4-.6 2 3 2 1-2h2l1 2 3-2-.6-2 1.4-1.4 2 .6 1.4-3-2-1v-2z"/></svg>
+        </span>
+        <span>고급 설정</span>
+      </summary>
+      <div class="advancedBody">
+        <label class="advancedField">AI 계측 전략
+          <select id="stageSelect" class="stageSelect">
+            <option value="auto" selected>AI가 구조·계측 전략 판단</option>
+            <option value="primary_surface">주요 면/부재 변형 계측</option>
+            <option value="support_region">지지부·접합부 집중 계측</option>
+            <option value="local_damage">국부 변형·손상 집중 계측</option>
+          </select>
+        </label>
+
+        <button id="editSensorConfigBtn" class="sidebarSecondary" type="button">센서 개수 다시 설정</button>
+
+        <details class="advancedSub">
+          <summary>모델 처리 상태</summary>
+          <div id="pipeline" class="pipeline">
+            <div data-step="read"><i></i><span>입력 파일 판독</span><b>WAIT</b></div>
+            <div data-step="views"><i></i><span>도면 뷰 / 3D 모델 식별</span><b>WAIT</b></div>
+            <div data-step="reconstruct"><i></i><span>3D 구조 재구성</span><b>WAIT</b></div>
+            <div data-step="geometry"><i></i><span>Geometry tool 분석</span><b>WAIT</b></div>
+            <div data-step="candidates"><i></i><span>설치 가능 후보 생성</span><b>WAIT</b></div>
+          </div>
+          <div id="modelTree" class="modelTree empty">모델을 먼저 불러오세요.</div>
+        </details>
+
+        <details class="advancedSub">
+          <summary>테스트 · 디버그</summary>
+          <div class="buttonGrid">
+            <button id="simBtn" disabled type="button">센서 시뮬레이션</button>
+            <button id="zeroBtn" disabled type="button">센서값 0</button>
+            <button id="clearRecBtn" disabled type="button">추천 지우기</button>
+            <button id="resetViewBtn" type="button">화면 초기화</button>
+          </div>
+        </details>
+
+        <details class="advancedSub" id="measurementDetails">
+          <summary>UWB 상세 계측</summary>
+          <div id="tab-live">
+            <div class="liveTop">
+              <div>
+                <div class="sectionLabel">TAG-01 실시간 계측</div>
+                <div id="liveConnectionText" class="liveConnectionText">데이터 수신 대기</div>
+              </div>
+              <span id="liveDot" class="liveDot"></span>
+            </div>
+            <div id="uwbQuality" class="liveHint" role="status">계측 상태 확인 중</div>
+            <div class="liveMetricGrid">
+              <div class="liveMetric liveDisplacement"><span>법선 변위 Δn</span><b id="liveDz">—</b><small id="liveFilterSummary">Unified Adaptive · 자동 반응</small></div>
+              <div class="liveMetric"><span>기울기 (X축)</span><b id="liveTilt">—</b></div>
+              <div class="liveMetric"><span>진동</span><b id="liveVibration">—</b></div>
+              <div class="liveMetric"><span>UWB 응답</span><b id="liveRangeCount">0 / 4</b></div>
+            </div>
+
+            <div class="staticTestCard">
+              <div class="staticActions"><button id="staticZeroBtn" type="button">0점 보정</button><button id="staticTestBtn" class="primary" type="button">정지 60초 검사</button></div>
+              <p id="staticTestStatus" role="status">목표: −5 ~ +5 mm</p>
+              <button id="staticDownloadBtn" disabled type="button">검사 CSV 저장</button>
+            </div>
+
+            <div class="uwbModeLabel">계측 방식 <b>Unified Adaptive · 자동</b></div>
+            <p id="uwbFilterNote" class="liveHint">모드 변경 없이 동일한 Sliding Window 상태를 유지합니다. 정지 시에는 과거 값을 더 신뢰하고, 진동·기울기·UWB 불확실성이 커지면 자동으로 최근 측정과 추가 Anchor 비중을 높입니다.</p>
+
+            <div class="sectionLabel topGap">Anchor 거리</div>
+            <div id="liveRangeList" class="liveRangeList">
+              <div><span>ANCHOR-01</span><b>대기</b></div>
+              <div><span>ANCHOR-02</span><b>대기</b></div>
+              <div><span>ANCHOR-03</span><b>대기</b></div>
+              <div><span>ANCHOR-04</span><b>대기</b></div>
+            </div>
+
+            <div class="sectionLabel topGap">Tag 상태</div>
+            <div class="liveStatusList">
+              <div><span>Wi-Fi RSSI</span><b id="liveRssi">—</b></div>
+              <div><span>동적 가속도</span><b id="liveAccel">—</b></div>
+              <div><span>배터리</span><b id="liveBattery">—</b></div>
+              <div><span>IMU</span><b id="liveImu">—</b></div>
+              <div><span>Sequence</span><b id="liveSeq">—</b></div>
+              <div><span>UWB 보정</span><b id="liveCalibration">—</b></div>
+              <div><span>원시 Δn</span><b id="liveRawDz">—</b></div>
+              <div><span>추정 불확도 (1σ)</span><b id="liveUncertainty">—</b></div>
+              <div><span>기하 잔차 RMS</span><b id="liveResidual">—</b></div>
+              <div><span>법선 감도</span><b id="liveSensitivity">—</b></div>
+              <div><span>추종 모드</span><b id="liveTemporalMode">—</b></div>
+              <div><span>Δn 방식</span><b id="liveDzMethod">—</b></div>
+            </div>
+
+            <details class="uwbTools">
+              <summary>UWB 실험 · 실제 좌표 설정</summary>
+              <p>동일 기준점의 안테나 중심 좌표를 m로 사용합니다. Tag 변위축은 각 추천 Surface의 normal입니다.</p>
+              <button id="uwbEditLayout" type="button">현재 좌표 확인 / 수정</button>
+              <label>실험 이름 <input id="uwbExperiment" value="정지_30초" maxlength="60"></label>
+              <label>실제 법선 변위 (mm, 모르면 비움) <input id="uwbTruth" type="number" step="0.1"></label>
+              <button id="uwbRecord" type="button">기록 시작</button>
+              <button id="uwbDownload" disabled type="button">중지 · CSV 저장</button>
+              <p id="uwbRecordStatus">최대 10분. 실제 변위는 별도로 측정한 값을 입력하세요.</p>
+              <p id="uwbRecordStats"></p>
+            </details>
+          </div>
+        </details>
+      </div>
+    </details>
+
+    <div class="sidebarStatus">
+      <div class="sync"><span id="apiDot" class="syncDot"></span><span id="apiStatus">AI 상태 확인 중…</span></div>
+      <span id="inputState" class="tiny">미입력</span>
+    </div>
+  </aside>
+
+  <div class="workspace">
+    <header class="topbar">
+      <div class="projectPath" id="projectPath">새 작업</div>
+      <div id="flowActionWrap" class="flowActionWrap hidden">
+        <div class="flowActionCopy">
+          <strong id="flowActionText">센서의 개수를 입력해 AI 추천을 받으세요</strong>
+          <span id="flowActionSubtext">Tag와 Anchor 개수를 확인한 뒤 진행하세요.</span>
+        </div>
+        <button id="runAiBtn" class="confirmButton" type="button" disabled>
+          <span id="runAiBtnLabel">AI 추천 받기</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspaceMain">
+      <section id="viewerView" class="workspaceView viewerView active">
+        <div class="viewer">
+          <div id="canvasHost"></div>
+
+          <div id="landingScreen" class="landingScreen">
+            <div class="landingBackdrop" aria-hidden="true"></div>
+            <div class="landingCard">
+              <div class="landingLogo" aria-label="MSL">MSL</div>
+              <div class="landingDivider" aria-hidden="true"></div>
+              <div class="landingEyebrow">SOC Digital Twin Monitoring System</div>
+              <h1>구조물 해체공사 디지털 트윈 모니터링 시스템</h1>
+              <button id="startIntroBtn" class="startIntroBtn" type="button">시작하기</button>
+            </div>
+          </div>
+
+          <div id="initialUpload" class="initialUpload">
+            <div id="dropZone" class="dropZone">
+              <div class="uploadGlyph">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M8 9l4-4 4 4M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+              </div>
+              <h1>파일을 첨부해주세요.</h1>
+              <p>GLB / OBJ 모델 1개 또는 DXF 평면·입면·단면 세트를 첨부할 수 있습니다.</p>
+              <button class="uploadButton" type="button">파일 선택</button>
+              <input id="fileInput" type="file" multiple accept=".glb,.obj,.dxf"/>
+            </div>
+          </div>
+
+          <div id="sensorSetupCard" class="sensorSetupCard hidden">
+            <div id="sensorSetupDragHandle" class="sensorSetupDragHandle" title="드래그하여 이동" aria-label="센서 설정 창 이동">
+              <span></span>
+            </div>
+            <div class="sensorSetupHeader">
+              <div>
+                <div class="setupEyebrow">모델 준비 완료</div>
+                <strong class="sensorSetupCompactTitle">센서 개수 설정</strong>
+              </div>
+              <button id="sensorSetupCollapseBtn" class="sensorSetupCollapseBtn" type="button" aria-expanded="true" title="센서 설정 접기">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+              </button>
+            </div>
+            <div class="sensorSetupBody">
+              <h2>센서의 개수를 입력해 AI 추천을 받으세요</h2>
+              <p>추천 위치는 입력한 센서 수와 모델의 설치 가능 Surface를 기준으로 계산됩니다.</p>
+              <div class="sensorConfigGrid">
+                <label class="countField"><span>Tag 개수</span><input id="tagCountInput" type="number" min="1" max="12" value="1"/></label>
+                <label class="countField"><span>Anchor 개수</span><input id="anchorCountInput" type="number" min="1" max="12" value="4"/></label>
+              </div>
+              <button id="applySensorConfigBtn" class="setupApplyButton" type="button">개수 적용</button>
+            </div>
+          </div>
+
+          <div id="viewerChrome" class="viewerChrome hidden">
+            <div class="viewerTop">
+              <div class="viewerCard">
+                <strong id="viewerTitle">디지털 트윈 미생성</strong>
+                <span id="viewerSubtitle">3D 모델 또는 도면 세트를 입력하세요</span>
+              </div>
+              <div class="viewerStats">
+                <div><span>입력</span><b id="sourceStat">—</b></div>
+                <div><span>구조물</span><b id="structureStat">미판단</b></div>
+                <div><span>Tag 후보</span><b id="tagCandidateStat">0</b></div>
+                <div><span>Anchor 후보</span><b id="anchorCandidateStat">0</b></div>
+              </div>
+            </div>
+            <div class="viewerTools">
+              <button id="gridBtn" title="Grid" type="button">
+                <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M4 16h16M10 4v16M16 4v16"/></svg>
+              </button>
+              <button id="wireBtn" title="Wireframe" type="button">
+                <svg viewBox="0 0 24 24"><path d="M12 3l9 17H3L12 3zM12 3v17M3 20l9-8 9 8"/></svg>
+              </button>
+              <button id="candidateBtn" title="Candidates" disabled type="button">
+                <svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="18" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>
+              </button>
+            </div>
+            <div class="legend">
+              <span><i class="tag"></i>Tag</span>
+              <span><i class="anchor"></i>Anchor</span>
+              <span><i class="candidate"></i>Candidate</span>
+            </div>
+          </div>
+
+          <div id="tagInfoPanel" class="tagInfoPanel hidden" aria-live="polite">
+            <div class="tagInfoHead"><strong id="tagInfoTitle">Tag 1</strong><button id="tagInfoClose" type="button">×</button></div>
+            <div class="tagInfoGrid">
+              <div id="tagInfoDisplacementRow"><span class="riskMark"></span><small>변위</small><b id="tagInfoDisplacement">—</b></div>
+              <div id="tagInfoTiltRow"><span class="riskMark"></span><small>기울기</small><b id="tagInfoTilt">—</b></div>
+              <div id="tagInfoVibrationRow"><span class="riskMark"></span><small>진동</small><b id="tagInfoVibration">—</b></div>
+              <div><span class="riskMark"></span><small>시간</small><b id="tagInfoTime">—</b></div>
+            </div>
+          </div>
+
+          <div id="toast" class="toast"></div>
+        </div>
+      </section>
+
+      <section id="aiResultsView" class="workspaceView pageView">
+        <div class="pageContainer">
+          <div class="pageHeader">
+            <div><span class="pageEyebrow">AI 추천 결과</span><h1>센서 배치 분석</h1></div>
+            <button id="backToViewerFromAi" class="ghostButton" type="button">3D 모델 보기</button>
+          </div>
+
+          <div id="tab-ai" class="resultsGrid">
+            <article class="contentCard span2">
+              <div class="cardTitle">모델 형상 파악</div>
+              <div id="aiStructure" class="infoCard mutedCard">AI 분석 전입니다.</div>
+            </article>
+
+            <article class="contentCard span2">
+              <div class="cardTitle">추천 절대 좌표</div>
+              <div class="coordinateOrigin">모델 기준 좌표 · 센서 케이스 중심점 · X/Z 원점 = 모델 중심 · Y=0 = 모델 최저점</div>
+              <div id="placementCoordinateList" class="placementCoordinateList emptyText">AI 추천이 확정되면 Tag와 Anchor의 절대좌표가 표시됩니다.</div>
+            </article>
+
+            <article class="contentCard">
+              <div class="cardTitle">좌표 선정 근거</div>
+              <div id="rationaleList" class="listCard emptyText">—</div>
+            </article>
+
+            <article class="contentCard">
+              <div class="cardTitle">근거 자료 · 출처</div>
+              <div id="researchList" class="researchList emptyText">—</div>
+            </article>
+
+            <details class="contentCard span2 optionalStrategy">
+              <summary>기존 계측 전략 보기</summary>
+              <div id="strategyList" class="listCard emptyText">—</div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section id="statsView" class="workspaceView pageView statsView">
+        <div class="pageContainer statsContainer">
+          <div class="pageHeader">
+            <div><span class="pageEyebrow">실시간 모니터링</span><h1>통계 화면</h1></div>
+            <button id="backToViewerFromStats" class="ghostButton" type="button">3D 모델 보기</button>
+          </div>
+
+          <section class="statsSection">
+            <div class="sectionHeading"><h2>Tag 현재 데이터</h2><span id="statsLiveStatus">데이터 수신 대기</span></div>
+            <div id="statsTagGrid" class="statsTagGrid">
+              <div class="emptyState">모니터링이 시작되면 각 Tag의 실시간 데이터가 표시됩니다.</div>
+            </div>
+          </section>
+
+          <section class="statsSection analysisSection">
+            <div class="sectionHeading">
+              <div><h2>수집 데이터 분석</h2><p>최근 수집 데이터를 시간 순서로 표시합니다.</p></div>
+              <select id="statsTagSelect" class="compactSelect"></select>
+            </div>
+            <div class="chartCard">
+              <div class="chartLegend"><span><i class="lineDisplacement"></i>법선 변위 (mm)</span><span><i class="lineTilt"></i>기울기 (°)</span></div>
+              <svg id="statsChartSvg" viewBox="0 0 900 260" preserveAspectRatio="none" aria-label="시간별 센서 그래프">
+                <g id="statsChartGrid"></g>
+                <polyline id="statsDisplacementLine" fill="none" stroke-width="2.4" points=""/>
+                <polyline id="statsTiltLine" fill="none" stroke-width="1.8" points=""/>
+              </svg>
+              <div id="statsChartEmpty" class="chartEmpty">아직 수집된 데이터가 없습니다.</div>
+            </div>
+          </section>
+
+          <section class="statsSection">
+            <div class="sectionHeading"><h2>위험 신호 이벤트 로그</h2><span id="riskEventCount">0건</span></div>
+            <div id="riskEventLog" class="riskEventLog"><div class="emptyState">위험 신호가 발생하면 시간과 Tag, 발생 항목을 기록합니다.</div></div>
+          </section>
+
+          <section class="statsSection systemSection">
+            <div class="sectionHeading"><h2>시스템 상태</h2></div>
+            <div class="health">
+              <div id="healthRing" class="healthRing"><span id="healthPct">100</span></div>
+              <div>
+                <div class="healthLine">배치 센서 <b id="healthSensors">0 / 5</b></div>
+                <div class="healthLine">활성 경고 <b id="warningCount">0</b></div>
+                <div class="healthLine">트윈 모드 <b id="twinMode">기하 분석</b></div>
+              </div>
+            </div>
+            <details class="systemLogDetails">
+              <summary>기존 시스템 이벤트 · 평균 추세 보기</summary>
+              <div class="legacyTrend">
+                <svg viewBox="0 0 700 110" preserveAspectRatio="none">
+                  <g stroke="#ededed"><line x1="0" y1="27" x2="700" y2="27"/><line x1="0" y1="55" x2="700" y2="55"/><line x1="0" y1="83" x2="700" y2="83"/></g>
+                  <polyline id="trendLine" fill="none" stroke="#202123" stroke-width="2.1" points="0,55 70,55 140,55 210,55 280,55 350,55 420,55 490,55 560,55 630,55 700,55"/>
+                </svg>
+              </div>
+              <div id="eventLog" class="systemEventLog"></div>
+            </details>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="dangerToast" class="dangerToast hidden" role="alert" aria-live="assertive">
+    <div class="dangerToastHead">
+      <span class="dangerToastPulse"></span>
+      <div><strong>위험 감지</strong><small id="dangerToastMeta">실시간 위험 알림</small></div>
+    </div>
+    <div id="dangerToastList" class="dangerToastList"></div>
+  </div>
+
+  <div id="calibrationToast" class="calibrationToast hidden" role="status">
+    <div class="calibrationHead"><span class="statusPulse"></span><strong id="calibrationTitle">영점 보정 중</strong><b id="calibrationPercent">0%</b></div>
+    <p id="calibrationMessage">구조물을 원위치에 고정해주세요.</p>
+    <div class="calibrationBar"><i id="calibrationFill"></i></div>
+  </div>
+</div>
+
+<div id="analysisLoading" class="analysisLoading" aria-hidden="true">
+  <div class="analysisLoadingCard">
+    <div class="workStatusRow">
+      <div class="workSpinner"></div>
+      <div class="loadingCopy">
+        <div class="loadingEyebrow">작업 중</div>
+        <h2 id="loadingTitle">구조물을 분석하고 있습니다</h2>
+        <p id="loadingMessage">기하 분석 결과를 바탕으로 구조 형식을 확인하고 있습니다.</p>
+      </div>
+      <div id="loadingPercent" class="loadingPercent">0%</div>
+    </div>
+    <div class="loadingProgress"><div class="loadingProgressBar"><div id="loadingProgressFill" class="loadingProgressFill"></div></div></div>
+    <button id="loadingDetailsToggle" class="loadingDetailsToggle" type="button">자세히 보기</button>
+    <div id="loadingDetails" class="loadingDetails">
+      <div id="loadingSteps" class="loadingSteps">
+        <div data-loading-step="identify"><i></i><span>구조물 종류 판별</span><b>대기</b></div>
+        <div data-loading-step="research"><i></i><span>관련 기술자료 검색</span><b>대기</b></div>
+        <div data-loading-step="strategy"><i></i><span>계측 전략 수립</span><b>대기</b></div>
+        <div data-loading-step="evaluate"><i></i><span>후보 위치 비교·검토</span><b>대기</b></div>
+        <div data-loading-step="final"><i></i><span id="loadingFinalStepLabel">최종 센서 배치 확정</span><b>대기</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 기존 JS 연결을 유지하기 위한 비가시 호스트. 기능은 삭제하지 않습니다. -->
+<div id="compatHidden" class="compatHidden" aria-hidden="true">
+  <details id="activityCard" class="activityCard">
+    <summary class="activityHead"><strong>AI 분석 진행상황</strong><span id="agentMode" class="badge neutral">대기</span></summary>
+    <div id="activityBody" class="activityBody"></div>
+    <div id="agentProgress" class="agentProgress">
+      <div data-ai-step="identify"><i></i><span>구조물 종류 판별</span><b>대기</b></div>
+      <div data-ai-step="research"><i></i><span>관련 기술자료 검색</span><b>대기</b></div>
+      <div data-ai-step="strategy"><i></i><span>계측 전략 수립</span><b>대기</b></div>
+      <div data-ai-step="evaluate"><i></i><span>후보 위치 비교·검토</span><b>대기</b></div>
+      <div data-ai-step="final"><i></i><span id="aiFinalStepLabel">최종 센서 배치 확정</span><b>대기</b></div>
+    </div>
+  </details>
+  <div id="tab-live-compat"></div>
+  <span id="tagPlacedCount"></span>
+  <span id="anchorPlacedCount"></span>
+  <div id="geometrySummary"></div>
+  <div id="componentList"></div>
+  <div id="sensorList"></div>
+  <div id="analytics" class="analytics">
+    <button id="analyticsHandle" type="button"></button>
+  </div>
+</div>
+
+<dialog id="uwbLayoutDialog">
+  <form id="uwbLayoutForm">
+    <h3>실제 설치 좌표 (m)</h3>
+    <p>Tag와 Anchor의 안테나 중심 기준 절대좌표입니다. Tag는 추천 Surface의 법선(normal) 방향으로 변위를 계산합니다. 모든 좌표의 원점·단위를 맞추세요.</p>
+    <div id="uwbLayoutRows"></div>
+    <label><input id="uwbMetricConfirm" type="checkbox" required> 실물 치수·ID·m 단위를 확인했습니다.</label>
+    <p>적용하면 보정을 다시 수집합니다. 구조물을 원래 위치에 고정하고 보정 완료를 기다리세요.</p>
+    <button type="submit">좌표 적용 · 재보정</button>
+    <button type="button" id="uwbLayoutCancel">취소</button>
+    <p id="uwbLayoutError" role="alert"></p>
+  </form>
+</dialog>
+
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+<script src="/model-anchor-limits.js"></script>
+<script src="/app.js"></script>
+<script src="/uwb-tools.js"></script>
+<script src="/static-check.js"></script>
+</body>
+</html>

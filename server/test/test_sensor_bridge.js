@@ -1,0 +1,43 @@
+const dgram=require('dgram'),assert=require('assert/strict'),fs=require('fs');
+const server=require('child_process').spawn(process.execPath,['server.js'],{cwd:require('path').join(__dirname,'..'),env:{...process.env,PORT:'18080',SENSOR_UDP_PORT:'14210',UWB_CAL_SAMPLES:'80',UWB_CAL_MIN_MS:'7000',UWB_TDMA_V11_5:'0',TAG_MEASUREMENT_STALE_MS:'2500'},stdio:['ignore','pipe','pipe']});
+process.on('exit',()=>server.kill());
+(async()=>{
+ await new Promise((resolve,reject)=>{
+   let log='';const timer=setTimeout(()=>reject(Error('test server startup timeout')),5000);
+   const fail=e=>{clearTimeout(timer);reject(Error(String(e)))};
+   server.once('error',fail);server.once('exit',code=>fail('test server exited '+code));
+   server.stderr.on('data',fail);
+   server.stdout.on('data',data=>{log+=data;if(log.includes('listening on 0.0.0.0:14210')&&log.includes('http://localhost:18080')){clearTimeout(timer);resolve();}});
+ });
+ const base='http://127.0.0.1:18080';
+ const post=async(p,b)=>{const r=await fetch(base+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return {status:r.status,data:await r.json()};};
+ const layout={metric:true,tags:[{node_id:'TAG-01',x:0,y:0.45,z:0}],anchors:[[-1,-1],[1,-1],[-1,1],[1,1]].map(([x,z],i)=>({node_id:`ANCHOR-0${i+1}`,x,y:0,z}))};
+ assert.equal((await post('/api/sensors/layout',{metric:true,tags:[{node_id:'x',x:null,y:0,z:0}],anchors:[]})).status,400);
+ assert.equal((await post('/api/sensors/layout',layout)).status,200);
+ const udp=dgram.createSocket('udp4');
+ const packet=seq=>({type:'tag_data',node_id:'TAG-01',role:'tag',seq,boot_id:'testboot',tilt_deg:0,vibration:false,dynamic_g:0,ranges:layout.anchors.map(a=>({anchor_id:a.node_id,ok:true,m:Math.hypot(a.x,.45,a.z)+.1,success_rate:100}))});
+ const send=p=>new Promise((resolve,reject)=>udp.send(JSON.stringify(p),14210,'127.0.0.1',e=>e?reject(e):resolve()));
+ for(let seq=1;seq<=85;seq++){await send(packet(seq));await new Promise(r=>setTimeout(r,100));}
+ let state=await (await fetch(base+'/api/sensors/state')).json(),tag=state.sensors.find(s=>s.role==='tag');assert.equal(tag.measurement_valid,true);
+ await send(packet(84));await new Promise(r=>setTimeout(r,100));state=await(await fetch(base+'/api/sensors/state')).json();assert.equal(state.sensors.find(s=>s.role==='tag').seq,85);
+ assert.equal((await post('/api/sensors/layout',layout)).data.changed,false);
+ state=await(await fetch(base+'/api/sensors/state')).json();assert(state.sensors.find(s=>s.role==='tag').uwb_calibration.ready);
+ const before=tag.ranges.map(r=>r.bias_m);
+ const unified=await post('/api/sensors/filter',{mode:'responsive'});
+ assert.equal(unified.status,200);assert.equal(unified.data.mode,'unified');assert.equal(unified.data.automatic,true);
+ state=await(await fetch(base+'/api/sensors/state')).json();
+ const unchanged=state.sensors.find(s=>s.role==='tag');assert(unchanged.uwb_calibration.ready);assert.equal(unchanged.measurement_valid,true);
+ assert.deepEqual(unchanged.ranges.map(r=>r.bias_m),before);
+ const missing=packet(87);missing.ranges=[];await send(missing);await new Promise(r=>setTimeout(r,100));
+ state=await(await fetch(base+'/api/sensors/state')).json();assert.equal(state.sensors.find(s=>s.role==='tag').dz_mm,null);
+ await post('/api/sensors/zero',{});
+ state=await(await fetch(base+'/api/sensors/state')).json();assert.equal(state.sensors.find(s=>s.role==='tag').measurement_valid,false);
+ await send({...packet(1),boot_id:'newboot'});await new Promise(r=>setTimeout(r,100));state=await(await fetch(base+'/api/sensors/state')).json();assert.equal(state.sensors.find(s=>s.role==='tag').boot_id,'newboot');
+ await new Promise(r=>setTimeout(r,2700));
+ await send({type:'hello',node_id:'TAG-01',role:'tag',fw:'test'});
+ await new Promise(r=>setTimeout(r,100));
+ state=await(await fetch(base+'/api/sensors/state')).json();
+ const stale=state.sensors.find(s=>s.role==='tag');assert.equal(stale.online,true);assert.equal(stale.dz_mm,null);assert.equal(stale.dz_method,'stale_data');
+ console.log('PASS: HTTP layout validation/idempotence, real UDP calibration/order/reboot/dropout, explicit Zero.');
+ udp.close();server.kill();
+})().catch(e=>{console.error(e);process.exit(1)});
