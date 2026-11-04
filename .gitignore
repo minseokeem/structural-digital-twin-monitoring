@@ -1,0 +1,5 @@
+node_modules/
+.env
+firmware/tag/secrets.h
+*.log
+.DS_Store
