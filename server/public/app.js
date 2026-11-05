@@ -540,7 +540,7 @@
   refreshDynamicCountLabels();
   loadSensorCaseAssets();
 
-  // ---------- R11.4 ChatGPT-style workspace orchestration ----------
+  // ---------- R11.4 chat-style workspace orchestration ----------
   function setSidebarCollapsed(collapsed){
     document.querySelector(".app")?.classList.toggle("sidebar-collapsed",Boolean(collapsed));
     setTimeout(resize,220);
@@ -3554,7 +3554,7 @@
 
   // ---------- Tabs/tools ----------
   function switchTab(tab){
-    // keeps AI results and UWB details in separate ChatGPT-style views.
+    // keeps AI results and UWB details in separate chat-style views.
     // Preserve the legacy call sites without hiding either functional panel.
     if(tab==="live") renderRawLiveTag();
   }
