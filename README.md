@@ -62,9 +62,9 @@ A single tag on the structure model was moved by a known step, and the logged es
 
 <p align="center"><img src="docs/media/range_check.png" width="72%"></p>
 
-- Anchors 1 and 3 changed close to the geometric model (+35 and −30 mm against +39 and −26 mm). Anchors 2 and 4 changed in the opposite direction (−9 and +18 mm).
+- Anchors 1 and 3 changed close to the geometric model (+35 and −30 mm against +35 and −30 mm). Anchors 2 and 4 changed in the opposite direction (−9 and +18 mm against +23 and −22 mm).
 - Range noise was high in the field, so the projected uncertainty rarely met the target and the selector requested all four anchors in 99.6% of ranging cycles.
-- Using anchors 1 and 3 alone, the logged ranges give about 66–78 mm offline. Mixing in the inconsistent ranges pulled the estimate down.
+- Using anchors 1 and 3 alone, a linearized offline estimate from the logged ranges gives about 60–75 mm. Mixing in the inconsistent ranges pulled the estimate down.
 - The raw ranges are therefore not accurate enough on every link. The next steps are to check the ranging accuracy of the UWB module on its own and the effect of the installation environment (reflective surfaces, occlusion).
 
 The code in this repository is a later version (R14.4) than the field-tested versions above and has not been validated in the field.
